@@ -26,6 +26,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequenceBuilder;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequenceRunner;
@@ -73,6 +74,7 @@ public class MecDrive extends com.acmerobotics.roadrunner.drive.MecanumDrive {
 
     private BNO055IMU imu;
     private VoltageSensor batteryVoltageSensor;
+    private Double maxPower = 1.0;
 
     public MecDrive(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
@@ -96,7 +98,7 @@ public class MecDrive extends com.acmerobotics.roadrunner.drive.MecanumDrive {
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
-        // BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
+        //BNO055IMUUtil.swapThenFlipAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
         leftFront = hardwareMap.get(DcMotorEx.class, "FrontLeft");
         leftRear = hardwareMap.get(DcMotorEx.class, "RearLeft");
@@ -129,6 +131,14 @@ public class MecDrive extends com.acmerobotics.roadrunner.drive.MecanumDrive {
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
 
         trajectorySequenceRunner = new TrajectorySequenceRunner(follower, HEADING_PID);
+    }
+
+    public void setMaxPower(double power){
+        if(power > 1.0 || power < 0.0){
+            throw new IllegalArgumentException("Power must be greater than 0 and not exceed 1");
+        }
+
+        maxPower = power;
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -269,10 +279,12 @@ public class MecDrive extends com.acmerobotics.roadrunner.drive.MecanumDrive {
 
     @Override
     public void setMotorPowers(double v, double v1, double v2, double v3) {
-        leftFront.setPower(v);
-        leftRear.setPower(v1);
-        rightRear.setPower(v2);
-        rightFront.setPower(v3);
+        //uses an array and so foreach loop instead of ternary ops
+
+        leftFront.setPower(v);// != 0 ? v+(Math.abs(maxPower-v) * (v < 0 ? 1 : -1)) : 0);
+        leftRear.setPower(v1);// != 0 ? v1+(Math.abs(maxPower-v1) * (v1 < 0 ? 1 : -1)) : 0);
+        rightRear.setPower(v2);// != 0 ? v2+(Math.abs(maxPower-v2) * (v2 < 0 ? 1 : -1)) : 0);
+        rightFront.setPower(v3);// != 0 ? v3+(Math.abs(maxPower-v3) * (v3 < 0 ? 1 : -1)) : 0);
     }
 
     @Override

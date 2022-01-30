@@ -27,11 +27,11 @@ public class Straight extends LinearOpMode {
                 .forward(5)
                 .build();
 
-        drive.followTrajectory(traj1);
-        drive.followTrajectory(traj2);
+
 
         waitForStart();
-
+        drive.followTrajectory(traj1);
+        drive.followTrajectory(traj2);
         if (isStopRequested()) return;
 
 
